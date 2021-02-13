@@ -11,3 +11,6 @@ module.exports = Router
 
 	// handles friendlist
 	.use('/friendlist', MustBeLoggedInMiddleware, require('./friendlist.route'))
+
+	// handles chat rooms
+	.use('/chatrooms', MustBeLoggedInMiddleware, require('./chatrooms.route'))
