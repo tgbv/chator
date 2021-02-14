@@ -9,5 +9,17 @@ module.exports = Router
 	// get users of lobby
 	.get('/lobby/:lobby_id/users', ChatroomsController.getUsersOfLobby)
 
+	// get lobby messages
+	.get('/lobby/:lobby_id/messages/:page', ChatroomsController.getLobbyMessages)
+
 	// creates new lobby
 	.post('/lobby/new', ChatroomsController.makeLobbyWithUsers)
+
+	// sends a message to a lobby
+	.post('/lobby/:lobby_id/message', ChatroomsController.sendLobbyMessage)
+
+	// leaves lobby
+	// provide "withMessage: true" in body to delete the messages as well
+	.delete('/lobby/:lobby_id', ChatroomsController.leaveLobby)
+
+

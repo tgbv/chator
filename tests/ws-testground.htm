@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Chator ws testground</title>
+	<meta charset="utf-8">
+</head>
+<body>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.1.1/socket.io.min.js" integrity="sha512-tXH7Av8en7+/hg0XwBppaCDPmpJhUXbZ+j7lNC4y+ZQpmCZQcgQN6RjkM7Irj1MUW7bZengfuTOqR4RzCC4bnA==" crossorigin="anonymous"></script>
+	<script type="text/javascript">
+
+			// tests lobby connection
+			const WsLobby = new io("ws://127.0.0.1:13579/lobby/1234", {
+				auth: {
+					token: "" // the bearer token
+				},
+			})
+			WsLobby.on('welcome', ()=>console.log('hello'))
+
+
+			// 
+
+	</script>
+</body>
+</html>

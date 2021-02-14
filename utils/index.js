@@ -6,4 +6,8 @@ module.exports = {
 	
 	setsession: require('./setsession.util'),
 	errorhandler: require('./errorhandler.util'),
+	validateMessage: require('./validateMessage.util'),
+	getAllFuncsOfClass: require('./getAllFuncsOfClass.util'),
+	
+	
 }

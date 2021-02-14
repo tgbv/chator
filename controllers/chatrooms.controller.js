@@ -1,6 +1,7 @@
 // handles user's chatrooms (lobbies)
 
-const { errorhandler, DB } = require('../utils')
+const { errorhandler, DB,
+		validateMessage } = require('../utils')
 
 const { AddFriendsSchema } = require('../schemas')
 
@@ -33,6 +34,7 @@ module.exports = {
 	*/
 	async makeLobbyWithUsers(req, res, next){
 		try {
+
 			// we can reuse this schema
 			//  we require users:[int,int,int, ...]
 			let results = AddFriendsSchema.validate(req.body)
@@ -48,7 +50,7 @@ module.exports = {
 					`, users)).map(item=>item.id)
 
 			// we create the lobby!
-			// if users.length === 1 it's a user <-> user conversation
+			// if users.length === 1 it's a me to user conversation
 			if(users.length === 1)
 			{
 				// check if there is a lobby containing the two users
@@ -70,7 +72,7 @@ module.exports = {
 					res.send(PotentialLobby[0])
 
 				// if not we create lobby
-				// assign the two users 
+				// assign the me + the x users 
 				// then return it
 				else 
 					res.send(
@@ -165,5 +167,144 @@ module.exports = {
 		} catch(e) {
 			return errorhandler(e, res);
 		}
-	}
+	},
+
+	/*
+	*	retrieve lobby's messages 
+	*/
+	async getLobbyMessages(req, res, next){
+		try {
+			// Get the messages
+			// while making sure I'm a member of the lobby
+
+			// Sorting is done by message ID, descending
+			// limit by req.params.page, 20 messages/chunk
+			let chunk = 20
+
+			res.send( 
+				await DB.q(`
+
+		SELECT c_messages.*
+		FROM c_messages
+
+		INNER JOIN c_user_lobby 
+			ON c_user_lobby.lobby_id = c_messages.lobby_id
+			AND c_messages.lobby_id = ?
+			AND EXISTS (
+				SELECT user_id
+				FROM c_user_lobby
+				WHERE lobby_id = ? 
+					AND user_id = ?
+			)
+
+		ORDER BY c_messages.id DESC
+		LIMIT ?
+		OFFSET ?  ;
+
+				`, [
+					req.params.lobby_id,
+					req.params.lobby_id,
+					req._.jwt.user,
+					chunk,
+					req.params.page*chunk-chunk
+				])
+			)
+		} catch(e) {
+			return errorhandler(e, res)
+		}
+	},
+
+	/*
+	*	sends a message to a lobby
+
+		strictly speaking this will not be used as messages will come via websocket
+		but it's better to have the concept drawn here before actually digging into ws programming
+	*/
+	async sendLobbyMessage(req, res, next){
+		try {
+			// first we validate the message type
+			// then we validate the message
+			// something more complex than JOI is required
+			// a helper has been created in this case
+			let verdict = validateMessage(req.body.message)
+			if( verdict !== true)
+				return res.status(422).send(verdict)
+
+			// proceed to insert the message into database
+			// a check to make sure I'm in the lobby is done as well
+			// returns the id of the message
+			let message = await DB.q(`
+
+		INSERT INTO c_messages(lobby_id, created_by, content, type)
+
+		SELECT ?, ?, ?, ?
+		WHERE EXISTS (
+			SELECT user_id
+			FROM c_user_lobby
+			WHERE c_user_lobby.user_id = ?
+				AND c_user_lobby.lobby_id = ?
+			LIMIT 1
+		) ;
+
+		SELECT LAST_INSERT_ID();
+
+			`, [
+				req.params.lobby_id, req._.jwt.user, req.body.message.content, req.body.message.type,
+				req._.jwt.user, req.params.lobby_id
+			])
+
+			// technically we're done.
+			res.status(204).send()
+		} catch(e) {
+			return errorhandler(e, res)
+		}
+	},
+
+	/*
+	*	leaves lobby
+
+		asks user to whether to delete his messages or not amid leaving
+	*/
+	async leaveLobby(req, res, next){
+		try {
+			// first! deletes messages only if body allows us to
+			if( req.body.withMessages && req.body.withMessages === true)
+				await DB.q(`
+
+					DELETE FROM c_messages
+					WHERE created_by = ?
+						AND lobby_id = ? 
+						AND EXISTS (
+							SELECT user_id
+							FROM c_user_lobby
+							WHERE c_user_lobby.user_id = ?
+								AND c_user_lobby.lobby_id = ?
+							LIMIT 1
+						) ;
+
+				`, [
+					req._.jwt.user,
+					req.params.lobby_id,
+					req._.jwt.user,
+					req.params.lobby_id,
+				]);
+
+			// leaves lobby!
+			await DB.q(`
+				DELETE FROM c_user_lobby
+				WHERE user_id = ?
+					AND lobby_id = ? ;
+			`, [
+				req._.jwt.user,
+				req.params.lobby_id,
+			])
+
+			// technically, DONE!
+			res.status(204).send()
+		}catch(e){
+			return errorhandler(e, res)
+		}
+	},
+
+
 }
