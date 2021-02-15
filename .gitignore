@@ -2,3 +2,4 @@ node_modules
 tor_config
 .env
 errorlog.txt
+package-lock.json
