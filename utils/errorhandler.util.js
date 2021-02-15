@@ -1,14 +1,10 @@
 // handles exceptions in general
 const Fs = require('fs')
+const errorHandlerBase  = require('./errorHandlerBase.util')
 
 module.exports = (ex, res = null)=>{
-	//
-	if(process.env.ENV === 'dev')
-		console.log(ex)
-	else
-		Fs.writeFileSync(`${__dirname}/errorlog.txt`, new Date() +
-						"\r\n---------------------\r\n"
-						+ JSON.stringify(ex) +"\r\n\r\n" )
+	// handle error
+	errorHandlerBase(ex)
 
 	// helps handling ws errors
 	if(res)

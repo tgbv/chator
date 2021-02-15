@@ -4,4 +4,5 @@ module.exports = {
 
 	WsRootMiddleware: require('./Root.ws'),
 	WsMustBeLoggedInMiddleware: require('./MustBeLoggedIn.ws'),
+	WsUserIsPartOfLobby: require('./UserIsPartOfLobby.ws'),
 }

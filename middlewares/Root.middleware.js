@@ -1,7 +1,13 @@
 // declares/defines variables used in req
 
-module.exports = (req, res, next)=>{
-	req._ = { }
+module.exports = (WSServer)=>{
 
-	next()
+	return (req, res, next)=>{
+		req._ = {
+			WS: WSServer,
+		}
+
+		next()
+	}
+
 }

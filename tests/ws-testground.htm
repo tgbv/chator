@@ -8,16 +8,80 @@
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.1.1/socket.io.min.js" integrity="sha512-tXH7Av8en7+/hg0XwBppaCDPmpJhUXbZ+j7lNC4y+ZQpmCZQcgQN6RjkM7Irj1MUW7bZengfuTOqR4RzCC4bnA==" crossorigin="anonymous"></script>
 	<script type="text/javascript">
 
-			// tests lobby connection
-			const WsLobby = new io("ws://127.0.0.1:13579/lobby/1234", {
-				auth: {
-					token: "" // the bearer token
-				},
+		const getAllFuncsOfObject = function(toCheck){
+		    var props = [];
+		    var obj = toCheck;
+		    do {
+		        props = props.concat(Object.getOwnPropertyNames(obj));
+		    } while (obj = Object.getPrototypeOf(obj));
+
+		    return props.sort().filter(function(e, i, arr) { 
+		       if (e!=arr[i+1] && typeof toCheck[e] == 'function') return true;
+		    });
+		}
+
+		const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjo0LCJpYXQiOjE2MTMzNTk3ODEsImV4cCI6MTYxMzQ0NjE4MX0.aLEVcGexOaxO17c6aFNe3E0PEliHrE1qEpuB-kLjDT8";
+
+		// tests lobby connection
+		//
+		//
+		//
+		const WsBadLobby = new io("ws://127.0.0.1:13579/lobby/1234", {
+			auth: {
+				token: token // the bearer token
+			},
+		})
+		WsBadLobby.on('welcome', ()=>console.log('hello'))
+		WsBadLobby.on('connect_error', e=>console.log(`WSE: ${e.message}`))
+
+		// tests lobby connection
+		//
+		//
+		//
+		const WsGoodLobby = new io("ws://127.0.0.1:13579/lobby/3", {
+			auth: {
+				token: token // the bearer token
+			},
+		})
+		WsGoodLobby.on('welcome', ()=>console.log('hello'))
+		WsGoodLobby.on('connect_error', e=>console.log(`WSE: ${e.message}`))
+		WsGoodLobby.on('error', e=>{
+			WsGoodLobby.removeAllListeners()
+			console.log(`WSE: ${e.message}`)
+		})
+		WsGoodLobby.on('connect', ()=>{
+
+			// send some test message
+			WsGoodLobby.emit('postMessage', {
+				type: 0,
+				content: "some content"
 			})
-			WsLobby.on('welcome', ()=>console.log('hello'))
 
+			// pong
+			WsGoodLobby.once('postMessage_END', data=>{
+				console.log("Sent: ", data)
 
-			// 
+			})
+			//	WsGoodLobby.emit('leaveLobby', { withMessages: true})
+
+			// receive message from others
+			WsGoodLobby.on('postedMessage', data=>{
+				console.log("Posted: ", data)
+			})
+		})
+
+		//
+		//
+		//
+		const WsLobby = new io("ws://127.0.0.1:13579/lobby", {
+			auth: {
+				token: token // the bearer token
+			},
+		})
+		WsBadLobby.on('welcome', ()=>console.log('hello from /lobby'))
+		WsBadLobby.on('connect_error', e=>console.log(`WSE: ${e.message}`))
+
+		
 
 	</script>
 </body>

@@ -1,6 +1,8 @@
 // gateway to the ws modules
 
-const { WsMustBeLoggedInMiddleware, WsRootMiddleware } = require('../middlewares')
+const { WsMustBeLoggedInMiddleware, 
+		WsRootMiddleware,
+		WsUserIsPartOfLobby } = require('../middlewares')
 
 // while express routes are passive, the websocket ones are active - event driven
 // therefore registering them as functions is the way
@@ -13,11 +15,22 @@ module.exports = (WS)=>{
 	 user will connect to a certain "lobby/lobby_id" namespace
 	 if it's allowed to, it'll listen to all incoming messages
 	 and send messages directly through the namespace
+
+	 maybe I'll implement rooms later on
 	*/
 	require('./lobby.ws')( 
 		WS 	.of(new RegExp("/lobby/[0-9]+"))
 			.use(WsRootMiddleware)
 			.use(WsMustBeLoggedInMiddleware) 
+			.use(WsUserIsPartOfLobby)
 	);
+
+	/*
+	*	handles general lobbies-related events
+		ex: added to lobby out of nowhere
+	*/
+	WS.of('/lobby')
+		.use(WsRootMiddleware)
+		.use(WsMustBeLoggedInMiddleware) ;
 
 }

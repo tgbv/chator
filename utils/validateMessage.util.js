@@ -32,9 +32,10 @@ module.exports = (message)=>{
 
 	// determine if message/type exists
 	if(
-		message &&
 		typeof(message.type) !== undefined && 
-		messageTypes[message.type])
+		typeof(message.content) !== undefined &&
+		messageTypes[message.type]
+	)
 
 		// invoke function based on messageType
 		// each message type has its own validation method

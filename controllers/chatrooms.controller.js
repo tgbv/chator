@@ -4,6 +4,7 @@ const { errorhandler, DB,
 		validateMessage } = require('../utils')
 
 const { AddFriendsSchema } = require('../schemas')
+//const { LobbiesSocket } = require('../websocket')
 
 module.exports = {
 
@@ -305,6 +306,56 @@ module.exports = {
 			return errorhandler(e, res)
 		}
 	},
+
+
+	/*
+	*	add more users to a lobby
+
+		currently you don't need to own the lobby (be it's creator) to add others
+		this may evolve soon into a more complex form
+	*/
+	async addUsersToLobby(req, res, next){
+		try {
+			// validate input
+			let input = AddFriendsSchema.validate(req.body)	
+			if(input.error)
+				return res.status(422).send(input.error)
+			let users = req.body.users
+
+			// proceed to adding users
+			// also set the status of the lobby to "group"
+			await DB.q(`
+				INSERT INTO c_user_lobby(user_id, lobby_id)
+				SELECT g_users.id, ?
+				FROM g_users
+				WHERE g_users.id IN (${ new Array(users.length).fill('?').join(',') })
+					AND NOT EXISTS (
+						SELECT c_user_lobby.user_id
+						FROM c_user_lobby
+							WHERE c_user_lobby.user_id = g_users.id
+							AND c_user_lobby.lobby_id = ?
+					) ;
+
+				UPDATE c_lobbies
+				SET is_group = true
+				WHERE c_lobbies.id = ? ;
+			`, [req._.lobby_id]
+				.concat(users)
+				.concat([
+					req._.lobby_id,
+					req._.lobby_id,
+				])
+			)
+
+			// notify users of their new lobby
+			// iterate all connected users then push them this notif
+
+			console.log( await req._.WS.of('/lobby').allSockets() )
+
+		}catch(e){
+			return errorhandler(e, res)
+		}
+	}
 
 
 }

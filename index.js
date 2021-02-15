@@ -24,12 +24,24 @@ const {RootMiddleware, WsRootMiddleware} = require('./middlewares')
 // express setup
 App.set('trust proxy', 1) // we're always gonna be behind TOR
 App.use(Bodyparser.json())
-App.use('/', RootMiddleware, require('./routes'))
+App.use('/', 
+
+	// binds the root middleware
+	// accepts custom params
+	RootMiddleware(WSServer), 
+
+	// bootstrap all routes
+	require('./routes')
+)
 
 // websocket setup
 require('./websocket')(
-	WSServer.use( WsRootMiddleware ) // for some reasons this doesn't work
-									// will open an issue on github soon
+	// the websocket server instance
+	WSServer
+
+	// for some reasons this middleware doesn't work
+	// will open an issue on github soon
+	.use( WsRootMiddleware ) 
 )
 
 // listen!

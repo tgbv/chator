@@ -1,7 +1,7 @@
 // checks if user is logged on 
 // ...aka JWT is supplied and valid
 
-const { JWT, errorhandler } = require('../utils')
+const { JWT, wsErrorHandler } = require('../utils')
 
 
 module.exports = (Socket, next)=>{
@@ -20,9 +20,10 @@ module.exports = (Socket, next)=>{
 			}
 		}
 
-		Socket.disconnect()
+		//Socket.emit('error_channel', {message: 'Invalid token.'})
+		next(new Error("Invalid token"))
 	} catch(e) {
-		errorhandler(e)
-		Socket.disconnect()
+		next(new Error("Invalid token"))
+		// Socket.emit('error_channel', {message: 'Invalid token.'})
 	}
 }

@@ -22,4 +22,9 @@ module.exports = Router
 	// provide "withMessage: true" in body to delete the messages as well
 	.delete('/lobby/:lobby_id', ChatroomsController.leaveLobby)
 
+	// adds users to a lobby it belongs to
+	//.post('/lobby/:lobby_id/add-users', ChatroomsController.addUsersToLobby)
+
+
+
 
