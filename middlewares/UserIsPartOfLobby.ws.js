@@ -15,11 +15,11 @@ module.exports = async (Socket, next)=>{
 				AND lobby_id = ?
 			LIMIT 1;
 		`, [
-			Socket._.jwt.user,
+			Socket.$.jwt.user,
 			lobby_id
 		])
 
-		Socket._.lobby_id = lobby_id
+		Socket.$.lobby_id = lobby_id
 
 		// return based on select
 		next( result.length > 0 ? null : new Error("Not belonging to lobby: "+lobby_id))

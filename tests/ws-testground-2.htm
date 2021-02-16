@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>ws testground 2</title>
+	<meta charset="utf-8">
+	<style type="text/css">
+		table, table tbody, table thead, tr, th, td {
+			border: 1px solid grey;
+		}
+
+		tr, th {
+			padding: 5px;
+		}
+	</style>
+</head>
+<body>
+
+	<div id="app">
+		
+		<!-- add new ws connection here -->
+		<div id="spawnWsConnection">
+			<input type="text" v-model="wss_uri" placeholder="WSS URI">
+			<input type="text" v-model="wss_namespace" placeholder="WSS namespace">
+			<input type="text" v-model="auth_token" placeholder="Auth TOKEN">
+			<button @click="spawnConnection">Spawn</button>
+		</div>
+
+		<hr>
+
+		<h2>WS Connections</h2>
+
+		<table>
+			<thead>
+				<tr>
+					<th>WSS_URI</th>
+					<th>WSS_NAMESPACE</th>
+					<th>Events</th>
+					<th>Log</th>
+					<th>Close conn</th>
+				</tr>
+			</thead>
+
+			<tbody v-for="(item, index) in connections">
+				<tr>
+					<td>{{ item.conn.io.uri }}</td>
+					<td>{{ item.conn.nsp }}</td>
+					<td>
+						<input type="text" v-model="item.event_name" placeholder="name">
+						<br>
+						<input type="text" v-model="item.event_value" placeholder="value">
+
+						<button @click="pushEvent(item)">+</button>
+					</td>
+					<td>
+						<p v-for="log in item.logs">{{ log }}</p>
+					</td>
+					<td>
+						<button @click="splice(item, index)">Close</button>
+					</td>
+				</tr>
+			</tbody>
+		</table>
+
+	</div>
+
+<script type="text/javascript" src="https://vuejs.org/js/vue.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.1.1/socket.io.js" integrity="sha512-oFOCo2/3DtjrJG4N27BjSLQWoiBv171sK6a+JiWjp/7agxC2nCUP358AqzxkBUb5jX8g6CYLPdSKQTbC0weCwA==" crossorigin="anonymous"></script>
+<script src="browserfied.js"></script>
+
+<script type="text/javascript">
+	
+	const Vapp = new Vue({
+		el: "#app",
+
+		data(){
+			return{
+				wss_uri: 'ws://127.0.0.1:13579',
+				wss_namespace: '/',
+				auth_token: null,
+
+				connections: [],
+			}
+		},
+
+		methods:{
+			spawnConnection(){
+				// make new sock connection
+				let Socket = new io(this.wss_uri + this.wss_namespace, {
+					auth: {
+						token: this.auth_token 
+					},
+				})
+
+				// push socket to stack
+				this.connections.push({
+					conn: Socket,
+					logs: [],
+
+					event_name: null,
+					event_value: null,
+				})
+
+				// set events
+				socketioWildcard(io.Manager)(Socket)
+
+				Socket.on('*', data=>{
+					this.connections[this.connections.length-1].logs.push(data.data)
+				})
+			},
+
+			pushEvent(Collection){
+				try {
+
+					Collection
+					.conn
+					.emit(Collection.event_name, JSON.parse(Collection.event_value) )
+
+				} catch(e) {
+
+					Collection
+					.conn
+					.emit(Collection.event_name, Collection.event_value)
+
+				}
+			},
+
+			splice(Collection, index){
+				Collection.conn.disconnect(false)
+
+				this.connections.splice(index, 1)
+			}
+		}
+	})
+
+
+</script>
+
+</body>
+</html>

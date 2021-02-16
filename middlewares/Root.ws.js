@@ -1,5 +1,5 @@
 module.exports = (Socket, next)=>{
-	Socket._ = {}
+	Socket.$ = {}
 
 	next()
 }

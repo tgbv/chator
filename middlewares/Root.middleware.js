@@ -3,7 +3,10 @@
 module.exports = (WSServer)=>{
 
 	return (req, res, next)=>{
-		req._ = {
+
+		// $ means the variable is APP-related only (not object related)
+		// it can holy any values we want
+		req.$ = {
 			WS: WSServer,
 		}
 

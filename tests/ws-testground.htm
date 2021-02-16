@@ -20,7 +20,7 @@
 		    });
 		}
 
-		const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjo0LCJpYXQiOjE2MTMzNTk3ODEsImV4cCI6MTYxMzQ0NjE4MX0.aLEVcGexOaxO17c6aFNe3E0PEliHrE1qEpuB-kLjDT8";
+		const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjo0LCJpYXQiOjE2MTM0NTgxMDksImV4cCI6MTYxMzU0NDUwOX0.k20ZsmwRm8RGKD_7bif9s4z5LQzWLKwLUdyYFsLFKIs";
 
 		// tests lobby connection
 		//
@@ -78,9 +78,9 @@
 				token: token // the bearer token
 			},
 		})
-		WsBadLobby.on('welcome', ()=>console.log('hello from /lobby'))
-		WsBadLobby.on('connect_error', e=>console.log(`WSE: ${e.message}`))
-
+		WsLobby.on('welcome', ()=>console.log('hello from /lobby'))
+		WsLobby.on('connect_error', e=>console.log(`WSE: ${e.message}`))
+		WsLobby.on('userAddedToLobby', e=>{console.log(e)})
 		
 
 	</script>

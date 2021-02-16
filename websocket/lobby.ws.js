@@ -35,8 +35,8 @@ module.exports = (WS)=>{
 						FROM c_messages
 						WHERE id = LAST_INSERT_ID();
 					`, [
-						Socket._.lobby_id,
-						Socket._.jwt.user,
+						Socket.$.lobby_id,
+						Socket.$.jwt.user,
 						data.content,
 						data.type,
 					]) )[1][0]
@@ -62,8 +62,8 @@ module.exports = (WS)=>{
 						AND created_by = ? ;
 				`, [
 					message_id,
-					Socket._.lobby_id,
-					Socket._.jwt.user,
+					Socket.$.lobby_id,
+					Socket.$.jwt.user,
 				])
 
 				// check if any row has been deleted
@@ -115,8 +115,8 @@ module.exports = (WS)=>{
 				`, [
 					data.content,
 					data.message_id,
-					Socket._.lobby_id,
-					Socket._.jwt.user,
+					Socket.$.lobby_id,
+					Socket.$.jwt.user,
 					data.message_id,
 				]);
 
@@ -148,8 +148,8 @@ module.exports = (WS)=>{
 					DELETE FROM c_user_lobby
 					WHERE user_id = ?
 						AND lobby_id = ?;
-				`, [ Socket._.jwt.user,
-					Socket._.lobby_id ])
+				`, [ Socket.$.jwt.user,
+					Socket.$.lobby_id ])
 
 				// delete messages if specified
 				// first select the messages IDs, then delete them
@@ -166,8 +166,8 @@ module.exports = (WS)=>{
 						WHERE c_messages.lobby_id = ?
 							AND c_messages.created_by = ?;
 					`, [
-						Socket._.jwt.user,
-						Socket._.lobby_id,
+						Socket.$.jwt.user,
+						Socket.$.lobby_id,
 					])
 
 					// now delete the messages
@@ -183,8 +183,8 @@ module.exports = (WS)=>{
 
 				// emit this news to everyone
 				Socket.broadcast.emit('userLeftLobby', {
-					user_id: Socket._.jwt.user,
-					lobby_id: Socket._.lobby_id,
+					user_id: Socket.$.jwt.user,
+					lobby_id: Socket.$.lobby_id,
 				})
 				Socket.emit('leaveLobby_END', true)
 

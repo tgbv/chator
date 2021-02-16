@@ -1,9 +1,9 @@
 // checks if user is logged on 
 // ...aka JWT is supplied and valid
 
-const { JWT } = require('../utils')
+const { JWT, DB } = require('../utils')
 
-module.exports = (req, res, next)=>{
+module.exports = async (req, res, next)=>{
 	try {
 
 		// get bearer token
@@ -15,9 +15,15 @@ module.exports = (req, res, next)=>{
 				token = token[1]
 
 				// register vars from token
-				req._.jwt = JWT.decrypt(token)
+				req.$.jwt = JWT.decrypt(token)
 
-				return next()
+				// check if user exists in database
+				let result = await DB.q(`
+					SELECT id FROM g_users WHERE id = ?
+				`, [ req.$.jwt.user ]);
+
+				if(result.length > 0)
+					return next()
 			}
 		}
 
