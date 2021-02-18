@@ -19,7 +19,7 @@ module.exports = async (Socket, next)=>{
 			lobby_id
 		])
 
-		Socket.$.lobby_id = lobby_id
+		Socket.$.lobby_id = parseInt(lobby_id)
 
 		// return based on select
 		next( result.length > 0 ? null : new Error("Not belonging to lobby: "+lobby_id))

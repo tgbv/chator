@@ -4,7 +4,12 @@ const { errorhandler, DB,
 		validateMessage } = require('../utils')
 
 const { AddFriendsSchema } = require('../schemas')
-//const { LobbiesSocket } = require('../websocket')
+
+const { UserMakesLobbyWithUsersLogic,
+		UserLeaveLobbyLogic } = require('../logic')
+
+const {NOEJR} = require('../exceptions')
+
 
 module.exports = {
 
@@ -35,126 +40,13 @@ module.exports = {
 	*/
 	async makeLobbyWithUsers(req, res, next){
 		try {
-
-			// we can reuse this schema
-			//  we require users:[int,int,int, ...]
-			let results = AddFriendsSchema.validate(req.body)
-			if(results.error)
-				return res.status(422).send(results.error)
-			let users = results.value.users
-
-			// we make sure all provided users exist in database
-			users = (await DB.q(`
-						SELECT id
-						FROM g_users
-						WHERE id IN (${ new Array(users.length).fill('?').join(',') });
-					`, users)).map(item=>item.id)
-
-			// strip myself
-			users.forEach((item, index)=>{
-				if(item === req.$.jwt.user) users.splice(index, 1)
-			})
-
-			// if users.length === 0, then no valid user was supplied, no lobby for ya bro!
-			if(users.length === 0)
-				res.status(422).send({
-					message: 'Users do not exist.'
-				})
-
-			// if users.length === 1 it's a me to user conversation
-			// we create the lobby!
-			else if(users.length === 1)
-			{
-				// check if there is a lobby containing the two users
-				let PotentialLobby = await DB.q(`
-					SELECT c_lobbies.*
-					FROM c_lobbies
-
-					WHERE c_lobbies.is_group = true
-						AND (
-							SELECT COUNT(*)
-							FROM c_user_lobby
-							WHERE c_user_lobby.lobby_id = c_lobbies.id
-								AND c_user_lobby.user_id IN (?, ?)
-						) = 2;
-				`, [req.$.jwt.user, users[0]])
-
-				// if yes, just return it
-				if(PotentialLobby.length === 1)
-					res.send(PotentialLobby[0])
-
-				// if not we create lobby
-				// assign the me + the x users 
-				// then return it
-				else {
-					// assign
-					let result = await DB.q(`
-						INSERT INTO c_lobbies(created_by, is_group)
-						VALUES(?, true);
-
-						INSERT INTO c_user_lobby(user_id, lobby_id)
-						VALUES (?, LAST_INSERT_ID()), (?, LAST_INSERT_ID());
-
-						SELECT *
-						FROM c_lobbies
-						WHERE id = LAST_INSERT_ID();
-					`, [
-						req.$.jwt.user,
-						req.$.jwt.user, users[0]
-					]) //[2][0];
-
-					// push socket notif to user
-					for (let [id, Socket] of req.$.WS.of('/lobby').sockets)
-						if( Socket.$.jwt.user === users[0]) {
-							Socket.emit('userAddedToLobby', {
-								user_id: users[0],
-								lobby_id: result[2][0],
-							})
-							break;
-						}
-
-					// return lobby ID
-					res.send(result[2][0])
-				}
-			}
-
-			// if users.length > 1 it's a group conversation
-			else
-			{
-				// create lobby
-				// assign users
-				// then return it
-				let result = await DB.q(`
-					INSERT INTO c_lobbies(created_by)
-					VALUES(?) ;
-
-					INSERT INTO c_user_lobby(user_id, lobby_id)
-					SELECT g_users.id, LAST_INSERT_ID()
-					FROM g_users
-					WHERE g_users.id IN ( ${ new Array(users.length+1).fill('?').join(',') } );
-
-					SELECT *
-					FROM c_lobbies
-					WHERE id = LAST_INSERT_ID();
-				`, [ req.$.jwt.user,
-					 req.$.jwt.user ]
-					.concat(users)
-
-				) //[2][0]
-
-				// push notification to users
-				for (let [id, Socket] of req.$.WS.of('/lobby').sockets)
-					if( users.includes( Socket.$.jwt.user ) ) 
-						Socket.emit('userAddedToLobby', {
-							user_id: Socket.$.jwt.user,
-							lobby_id: result[2][0],
-						})
-
-				// return
-				res.status(201).send( result[2][0])
-			}
-
+			await UserMakesLobbyWithUsersLogic.init(
+				req.$.jwt.user,
+				req.body.users,
+				req.$.WS,
+			)
 		} catch(e) {
+			//console.log(e)
 			return errorhandler(e, res)
 		}
 	},
@@ -275,96 +167,12 @@ module.exports = {
 	*/
 	async leaveLobby(req, res, next){
 		try {
-			// FIRST ! get all lobby users
-			let users = (await DB.q(`
-				SELECT user_id
-				FROM c_user_lobby
-				WHERE lobby_id = ?;
-			`, [
-				req.params.lobby_id
-			])).map(item=>item.id)
-
-			// then! deletes messages ONLY if body allows us to
-			if( req.body.withMessages && req.body.withMessages === true){
-				await DB.q(`
-
-					DELETE FROM c_messages
-					WHERE created_by = ?
-						AND lobby_id = ? ;
-
-				`, [
-					req.$.jwt.user,
-					req.params.lobby_id,
-					req.$.jwt.user,
-					req.params.lobby_id,
-				]);	
-
-				// push notification to users
-				for (let [id, Socket] of req.$.WS.of('/lobby').sockets)
-					if( users.includes( Socket.$.jwt.user ) ) 
-						Socket.emit('deletedAllMessagesFromLobbyOfUser', {
-							user_id: req.$.jwt.user,
-							lobby_id: parseInt(req.params.lobby_id),
-						})
-			}
-
-
-			// leaves lobby!
-			await DB.q(`
-				DELETE FROM c_user_lobby
-				WHERE user_id = ?
-					AND lobby_id = ? ;
-			`, [
+			await UserLeaveLobbyLogic.init(
 				req.$.jwt.user,
-				req.params.lobby_id,
-			])
-
-			// push notification to users
-			for (let [id, Socket] of req.$.WS.of('/lobby').sockets)
-				if( users.includes( Socket.$.jwt.user ) ) 
-					Socket.emit('userLeftLobby', {
-						user_id: req.$.jwt.user,
-						lobby_id: parseInt(req.params.lobby_id),
-					})
-
-			// check if lobby has only one user left
-			let result = await DB.q(`
-				SELECT COUNT(*)
-				FROM c_user_lobby
-				WHERE lobby_id = ? ;
-			`, [
-				req.params.lobby_id,
-			])
-
-			// if not, remove it, unlink all users, and remove all messages
-			if(result[0]['COUNT(*)'] < 2)
-			{
-				await DB.q(`
-					DELETE FROM c_lobbies
-					WHERE id = ?;
-
-					DELETE FROM c_user_lobby
-					WHERE lobby_id = ?;
-
-					DELETE FROM c_messages
-					WHERE lobby_id = ?;
-				`, [
-					req.params.lobby_id,
-					req.params.lobby_id,
-					req.params.lobby_id
-				])
-
-				// push notification to users
-				for (let [id, Socket] of req.$.WS.of('/lobby').sockets)
-					if( users.includes( Socket.$.jwt.user ) ) 
-						Socket.emit('deletedLobby', {
-							lobby_id: parseInt(req.params.lobby_id),
-						})
-
-			}
-
-			// technically, DONE!
-			res.status(204).send()
+				parseInt(req.params.lobby_id),
+				req.body.withMessages,
+				req.$.WS
+			)
 		}catch(e){
 			return errorhandler(e, res)
 		}
@@ -409,14 +217,19 @@ module.exports = {
 
 				SELECT user_id
 				FROM c_user_lobby
-					WHERE c_user_lobby.lobby_id = ?
+					WHERE c_user_lobby.lobby_id = ? 
 					AND c_user_lobby.created_at >= @tmp;
-			`, [req.$.lobby_id]
+
+				SELECT user_id
+				FROM c_user_lobby
+					WHERE c_user_lobby.lobby_id = ? ;
+			`, [req.params.lobby_id]
 				.concat(users)
 				.concat([
-					req.$.lobby_id,
-					req.$.lobby_id,
-					req.$.lobby_id,
+					req.params.lobby_id,
+					req.params.lobby_id,
+					req.params.lobby_id,
+					req.params.lobby_id,
 				])
 			)
 
@@ -425,15 +238,35 @@ module.exports = {
 
 			// push ONLY if users have been added
 			if(result[3].length > 0)
-				for (let [id, Socket] of req.$.WS.of('/lobby').sockets)
-					if( users.includes( Socket.$.jwt.user ) ) 
-						Socket.emit('userAddedToLobby', {
-							user_id: Socket.$.jwt.user,
-							lobby_id: req.$.lobby_id,
+			{
+				// select lobby first
+				let lobby = await DB.q(`
+					SELECT *
+					FROM c_lobbies
+					WHERE id = ?;
+				`, [
+					req.params.lobby_id
+				])
+
+				// push notification to users OF lobby
+				for (let [id, Socket] of req.$.WS.of('/lobby/'+req.params.lobby_id).sockets)
+					if( result[4].map(item=>item.user_id).includes(Socket.$.jwt.user) )
+						Socket.emit('usersAddedToLobby', {
+							users: result[3].map(item=>item.user_id),
+							lobby_id: lobby[0].id,
 						})
 
+				// push notification to ADDED users
+				for (let [id, Socket] of req.$.WS.of('/lobby').sockets)
+					if( result[3].map(item=>item.user_id).includes(Socket.$.jwt.user) )
+						Socket.emit('userAddedToLobby', {
+							user_id: Socket.$.jwt.user,
+							lobby: lobby[0],
+						})
+			}
+
 			// done. returns the added users
-			res.send(result[3].map(item=>item.id))
+			res.send(result[3].map(item=>item.user_id))
 		}catch(e){
 			return errorhandler(e, res)
 		}

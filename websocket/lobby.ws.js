@@ -143,6 +143,9 @@ module.exports = (WS)=>{
 		*/
 		Socket.on('leaveLobby', async data=>{
 			try {
+				// data MUST be something
+				if(!data) data = {}
+
 				// leave lobby
 				await DB.q(`
 					DELETE FROM c_user_lobby
@@ -166,8 +169,8 @@ module.exports = (WS)=>{
 						WHERE c_messages.lobby_id = ?
 							AND c_messages.created_by = ?;
 					`, [
-						Socket.$.jwt.user,
 						Socket.$.lobby_id,
+						Socket.$.jwt.user,
 					])
 
 					// now delete the messages
@@ -178,7 +181,10 @@ module.exports = (WS)=>{
 						`, result.map(item=>item.id))
 
 					// emit this to users
-					Socket.broadcast.emit('deletedMessages', result.map(item=>item.id))
+					Socket.broadcast.emit('deletedAllMessagesFromLobbyOfUser',{
+						lobby_id: Socket.$.lobby_id,
+						user_id:Socket.$.user,
+					})
 				}
 
 				// emit this news to everyone
