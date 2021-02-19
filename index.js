@@ -7,6 +7,10 @@ const SocketIo = require('socket.io')
 
 // server setup
 Dotenv.config()
+
+const {DB} = require('./utils')
+		DB.init()
+
 const App = Express()
 const HttpServer = Http.createServer(App)
 const WSServer = new SocketIo.Server({
@@ -17,6 +21,7 @@ const WSServer = new SocketIo.Server({
 
 	}
 })
+
 
 // import middlewares
 const {RootMiddleware, WsRootMiddleware} = require('./middlewares')
