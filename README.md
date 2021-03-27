@@ -1,5 +1,5 @@
 # Chator v2
------------------------
+
 Open source messaging system designed to be integrated with TOR network (see http://torproject.org).
 
 This repository contains the backend source code. It is fully functional. <br>
@@ -8,7 +8,6 @@ This repository contains the backend source code. It is fully functional. <br>
 - SocketIO v3 for duplex connections.
 
 ## Routes described
------------------------
 
 ### Authentication
 - `POST: /auth/login` Login based on username/password credentials. Login is RESTful, returns a JWT.
@@ -35,7 +34,6 @@ The following routes require user to be a part of lobby:
 - `POST: /chatrooms/lobby/:lobby_id/add-users` If user is admin of lobby it can add other users to it
 
 ## Duplex connections Events (websocket) described
------------------------
 
 Websocket events are defined in `/websocket` folder. Pseudo syntax: `/namespace :event`
 
@@ -59,6 +57,5 @@ Most inbound events will have outbound a loopback message in the syntax: `eventn
 - `/lobby/[0-9]+ :userLeftLobby` A user has left a lobby
 
 ## Contribution/development
------------------------
 
 Development is currently suspended (I need a java guru to write the frontend), although contributions are welcome!
