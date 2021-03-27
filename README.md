@@ -9,18 +9,18 @@ This repository contains the backend source code. It is fully functional. <br>
 
 ## Routes described
 
-### Authentication
+#### Authentication
 - `POST: /auth/login` Login based on username/password credentials. Login is RESTful, returns a JWT.
 - `POST: /auth/register` Register with username/password credentials
 
-### Friendlist
+#### Friendlist
 ALL require JWT.
 
 - `GET: /friendlist` Retrieves all user's friends
 - `POST: /friendlist/add-friends` User adds friends to its own friendlist
 - `DELETE: /friendlist/unlink-friends` User unfriends other users
 
-### Chatrooms (aka lobbies)
+#### Chatrooms (aka lobbies)
 ALL require JWT.
 
 - `GET: /chatrooms` Retrieves all lobbies to which user is assigned.
@@ -42,13 +42,13 @@ s = websocket server
 
 Most inbound events will have outbound a loopback message in the syntax: `eventname_END`. See the [source code](https://github.com/tgbv/chator/blob/238554fa8f3231f0599381549a9fa7cf3bfe3381/websocket/lobby.ws.js#L46) for better understandment.
 
-### Inbound events (c -> s)
+#### Inbound events (c -> s)
 - `/lobby/[0-9]+ :postMessage` User posts message to a lobby
 - `/lobby/[0-9]+ :deleteMessage` User deletes its message from a lobby
 - `/lobby/[0-9]+ :editMessage` User edits its message from a lobby
 - `/lobby/[0-9]+ :leaveLobby` User leaves a lobby
 
-### Outbound events (s -> c)
+#### Outbound events (s -> c)
 - `/lobby/[0-9]+ :welcome` Welcome message on connection establishment
 - `/lobby/[0-9]+ :postedMessage` A new message has been posted
 - `/lobby/[0-9]+ :deletedMessage` A message has been deleted
