@@ -14,26 +14,23 @@ This repository contains the backend source code. It is fully functional. <br>
 - `POST: /auth/register` Register with username/password credentials
 
 #### Friendlist
-ALL require JWT.
 
 - `GET: /friendlist` Retrieves all user's friends
 - `POST: /friendlist/add-friends` User adds friends to its own friendlist
 - `DELETE: /friendlist/unlink-friends` User unfriends other users
 
 #### Chatrooms (aka lobbies)
-ALL require JWT.
 
 - `GET: /chatrooms` Retrieves all lobbies to which user is assigned.
 - `POST: /chatrooms/lobby/new` Creates a new lobby with users.
 
-The following routes require user to be a part of lobby:
 - `GET: /chatrooms/lobby/:lobby_id/users` Retrieves users assigned to lobby
 - `GET: /chatrooms/lobby/:lobby_id/messages/:page` Retrieve messages assigned to lobby (sent by users). Paginated
 - `POST: /chatrooms/lobby/:lobby_id/message` Sends a message to a lobby
 - `DELETE: /chatrooms/lobby/:lobby_id` User leaves a lobby
 - `POST: /chatrooms/lobby/:lobby_id/add-users` If user is admin of lobby it can add other users to it
 
-## Duplex connections Events (websocket) described
+## Duplex connection Events (websocket) described
 
 Websocket events are defined in `/websocket` folder. Pseudo syntax: `/namespace :event`
 
